@@ -17,6 +17,9 @@ data/
 *.pptx
 *.ppt
 
+# ── Presentation Assets ───────────────────────────────────────────────────────
+Presentation Assets/
+
 # ── Model Checkpoints ─────────────────────────────────────────────────────────
 checkpoints/
 *.pth
