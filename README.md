@@ -105,7 +105,6 @@ L1 is preferred over L2 because L2's squared penalty causes the model to "play i
 | Dataset | Images | Purpose |
 |---|---|---|
 | [COCO 2017 Train](https://cocodataset.org/#download) | ~118,000 | Primary training — diverse subjects (people, animals, objects, food, outdoor scenes) |
-| [MIT Places205](http://places.csail.mit.edu/) | Subset (~50k) | Supplementary — scene/landscape focused, improves outdoor colorization |
 
 **No labels are used from either dataset.** Only the images are needed. The L channel is the input; the ab channels are the supervision signal — both derived automatically by converting each image to Lab space.
 
@@ -159,12 +158,6 @@ pip install -r requirements.txt
 ```bash
 # Download train2017 images (~18GB) from https://cocodataset.org/#download
 # Extract to data/train/
-```
-
-**MIT Places (optional):**
-```bash
-# Request access at http://places.csail.mit.edu/
-# Extract subset to data/train/ alongside COCO images
 ```
 
 ---
