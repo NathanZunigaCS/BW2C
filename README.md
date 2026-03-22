@@ -126,7 +126,6 @@ BW2C/
 │   └── evaluate.py     # PSNR, SSIM metrics + comparison grid output
 ├── checkpoints/        # Saved model weights (not committed)
 ├── results/            # Colorized output images
-├── Presentation Assets/
 ├── requirements.txt
 └── README.md
 ```
