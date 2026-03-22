@@ -10,14 +10,12 @@ __pycache__/
 venv/
 env/
 
-# ── Data — never commit large image datasets ──────────────────────────────────
+# ── Data — never commit large training datasets ───────────────────────────────
 data/
-*.jpg
-*.jpeg
-*.png
-*.webp
-!Presentation Assets/**
-!results/samples/**
+
+# ── PowerPoint files ──────────────────────────────────────────────────────────
+*.pptx
+*.ppt
 
 # ── Model Checkpoints ─────────────────────────────────────────────────────────
 checkpoints/
