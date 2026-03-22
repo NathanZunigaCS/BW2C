@@ -1,0 +1,48 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual Environment ───────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Data — never commit large image datasets ──────────────────────────────────
+data/
+*.jpg
+*.jpeg
+*.png
+*.webp
+!Presentation Assets/**
+!results/samples/**
+
+# ── Model Checkpoints ─────────────────────────────────────────────────────────
+checkpoints/
+*.pth
+*.pt
+*.ckpt
+
+# ── Training Logs & TensorBoard ───────────────────────────────────────────────
+runs/
+logs/
+
+# ── Results (keep samples, not bulk output) ───────────────────────────────────
+results/
+!results/samples/
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
