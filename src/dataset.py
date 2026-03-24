@@ -225,6 +225,9 @@ if __name__ == "__main__":
     import sys
     import matplotlib.pyplot as plt
 
+    from matplotlib.colors import LinearSegmentedColormap
+    b_cmap = LinearSegmentedColormap.from_list("b_channel", ["blue", "white", "yellow"])
+
     TRAIN_DIR = "data/train"
     VAL_DIR   = "data/val"
 
@@ -258,10 +261,11 @@ if __name__ == "__main__":
     ab_np = unnormalize_ab(ab_batch[0].permute(1, 2, 0).numpy())  # (256, 256, 2)
     rgb   = lab_to_rgb(l_np, ab_np)
 
-    fig, axes = plt.subplots(1, 3, figsize=(12, 4))
-    axes[0].imshow(l_np, cmap="gray");       axes[0].set_title("Input — L (grayscale)");   axes[0].axis("off")
-    axes[1].imshow(ab_np[:, :, 0], cmap="RdYlGn"); axes[1].set_title("Target — a channel"); axes[1].axis("off")
-    axes[2].imshow(rgb);                     axes[2].set_title("Reconstructed RGB");         axes[2].axis("off")
+    fig, axes = plt.subplots(1, 4, figsize=(16, 4))
+    axes[0].imshow(l_np, cmap="gray");               axes[0].set_title("Input — L (grayscale)");    axes[0].axis("off")
+    axes[1].imshow(ab_np[:, :, 0], cmap="RdYlGn_r"); axes[1].set_title("Target — a channel (green↔red)");  axes[1].axis("off")
+    axes[2].imshow(ab_np[:, :, 1], cmap=b_cmap); axes[2].set_title("Target — b channel (blue↔yellow)"); axes[2].axis("off")
+    axes[3].imshow(rgb);                             axes[3].set_title("Reconstructed RGB");         axes[3].axis("off")
     plt.tight_layout()
     plt.savefig("results/dataset_sanity_check.png", dpi=100)
     plt.show()
