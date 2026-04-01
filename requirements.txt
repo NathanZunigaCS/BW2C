@@ -22,3 +22,6 @@ tqdm>=4.66.0
 
 # ── Dataset Download Helpers ──────────────────────────────────────────────────
 requests>=2.31.0           # for any manual dataset fetch scripts
+
+# ── Web Interface (Streamlit) ──────────────────────────────────────────────────
+streamlit>=1.30.0
