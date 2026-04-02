@@ -44,6 +44,10 @@ def colorize_image(model, image: Image.Image):
         ab_pred_small = model(l_tensor).cpu().numpy()[0].transpose(1, 2, 0)  # (256,256,2)
     ab_pred_small = unnormalize_ab(ab_pred_small)
 
+    # Saturation boost: push muted predictions toward richer color
+    # 1.4x amplifies weak ab values (orange, red, purple) without blowing out greens/blues
+    ab_pred_small = np.clip(ab_pred_small * 1.4, -110, 110)
+
     # Upscale predicted ab back to original resolution
     ab_a = Image.fromarray(ab_pred_small[:, :, 0].astype(np.float32)).resize((orig_w, orig_h), resample=Image.BICUBIC)
     ab_b = Image.fromarray(ab_pred_small[:, :, 1].astype(np.float32)).resize((orig_w, orig_h), resample=Image.BICUBIC)

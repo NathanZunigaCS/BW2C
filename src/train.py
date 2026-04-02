@@ -1,10 +1,13 @@
 """train.py — training loop for BW2C colorization"""
 
 import argparse
+import json
 import os
 import time
+from pathlib import Path
 
 import torch
+import torch._dynamo
 import torch.nn as nn
 from torch.optim import Adam
 
@@ -26,10 +29,11 @@ def parse_args():
     p.add_argument("--checkpoint", type=str, default=None)
     p.add_argument("--output-dir", type=str, default="checkpoints")
     p.add_argument("--resume", action="store_true")
+    p.add_argument("--amp", action="store_true", help="Enable AMP mixed precision (faster on CUDA)")
     return p.parse_args()
 
 
-def train_epoch(model, dataloader, criterion, optimizer, device):
+def train_epoch(model, dataloader, criterion, optimizer, device, scaler=None):
     model.train()
     running_loss = 0.0
     count = 0
@@ -39,10 +43,19 @@ def train_epoch(model, dataloader, criterion, optimizer, device):
         ab = ab.to(device, non_blocking=True)
 
         optimizer.zero_grad()
-        pred_ab = model(l)
-        loss = criterion(pred_ab, ab)
-        loss.backward()
-        optimizer.step()
+        if scaler is not None:
+            # AMP: run forward in float16, keep loss scaling stable
+            with torch.amp.autocast('cuda'):
+                pred_ab = model(l)
+                loss = criterion(pred_ab, ab)
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            pred_ab = model(l)
+            loss = criterion(pred_ab, ab)
+            loss.backward()
+            optimizer.step()
 
         running_loss += loss.item() * l.size(0)
         count += l.size(0)
@@ -80,8 +93,27 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
+    # cuDNN auto-tunes convolution algorithms for fixed input size — free ~5-10% speed
+    torch.backends.cudnn.benchmark = True
+
+    # AMP scaler — only active when --amp flag is passed
+    scaler = torch.amp.GradScaler('cuda') if (args.amp and device.type == "cuda") else None
+    if scaler:
+        print("AMP mixed precision enabled")
+
     model = ResNetColorizer(pretrained=args.pretrained)
     model.to(device)
+
+    # torch.compile: fuses ops and generates optimized CUDA kernels (~10-20% faster training)
+    # Requires PyTorch 2.0+. Falls back gracefully if unavailable.
+    if device.type == "cuda":
+        try:
+            torch._dynamo.config.suppress_errors = True
+            model = torch.compile(model)
+            print("torch.compile enabled")
+        except Exception:
+            print("torch.compile not available, skipping")
+
     print("Model created, trainable params:", count_parameters(model))
 
     train_loader, val_loader = get_dataloaders(
@@ -112,7 +144,7 @@ def main():
 
         for epoch in range(start_epoch, start_epoch + args.phase1_epochs):
             t0 = time.time()
-            train_loss = train_epoch(model, train_loader, criterion, optimizer, device)
+            train_loss = train_epoch(model, train_loader, criterion, optimizer, device, scaler)
             val_loss = eval_epoch(model, val_loader, criterion, device)
             t1 = time.time()
 
@@ -134,7 +166,7 @@ def main():
 
     for epoch in range(start_epoch, start_epoch + args.phase2_epochs):
         t0 = time.time()
-        train_loss = train_epoch(model, train_loader, criterion, optimizer, device)
+        train_loss = train_epoch(model, train_loader, criterion, optimizer, device, scaler)
         val_loss = eval_epoch(model, val_loader, criterion, device)
         t1 = time.time()
 

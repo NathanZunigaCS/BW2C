@@ -33,7 +33,7 @@ AB_NORM = 110.0
 IMG_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 # Input spatial size expected by the model
-IMG_SIZE = 256
+IMG_SIZE = 384
 
 
 def normalize_l(l_channel: np.ndarray) -> np.ndarray:
@@ -194,18 +194,22 @@ def get_dataloaders(
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
-        shuffle=True,           # shuffle every epoch so the model sees different orders
+        shuffle=True,
         num_workers=num_workers,
-        pin_memory=True,        # speeds up CPU→GPU transfer when using CUDA
-        drop_last=True,         # drop the last incomplete batch for stable training
+        pin_memory=True,
+        drop_last=True,
+        persistent_workers=(num_workers > 0),  # keep workers alive between epochs — saves respawn overhead
+        prefetch_factor=2 if num_workers > 0 else None,  # prefetch 2 batches per worker ahead of GPU
     )
 
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
-        shuffle=False,          # validation order doesn't matter
+        shuffle=False,
         num_workers=num_workers,
         pin_memory=True,
+        persistent_workers=(num_workers > 0),
+        prefetch_factor=2 if num_workers > 0 else None,
     )
 
     print(f"Training images  : {len(train_dataset):,}")
