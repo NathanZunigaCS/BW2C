@@ -10,6 +10,7 @@ import torch
 import torch._dynamo
 import torch.nn as nn
 from torch.optim import Adam
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from dataset import get_dataloaders
 from model import ResNetColorizer, count_parameters
@@ -17,7 +18,7 @@ from model import ResNetColorizer, count_parameters
 
 def parse_args():
     p = argparse.ArgumentParser(description="Train BW2C colorization model")
-    p.add_argument("--train-dir", type=str, default="data/train")
+    p.add_argument("--train-dir", type=str, nargs='+', default=["data/train"])
     p.add_argument("--val-dir", type=str, default="data/val")
     p.add_argument("--batch-size", type=int, default=16)
     p.add_argument("--num-workers", type=int, default=0)
@@ -31,6 +32,16 @@ def parse_args():
     p.add_argument("--resume", action="store_true")
     p.add_argument("--amp", action="store_true", help="Enable AMP mixed precision (faster on CUDA)")
     return p.parse_args()
+
+
+def colorfulness_penalty(pred_ab: torch.Tensor) -> torch.Tensor:
+    """Encourage chromatic predictions by penalizing low-saturation outputs.
+    Motivated by Zhang et al. ECCV 2016 — L1 regression suppresses vivid colors
+    by averaging toward gray; this term counteracts that bias.
+    pred_ab: (B, 2, H, W) normalized to [-1, 1]
+    """
+    chroma = torch.sqrt(pred_ab[:, 0] ** 2 + pred_ab[:, 1] ** 2 + 1e-8)
+    return -chroma.mean()  # negative = maximize chroma
 
 
 def train_epoch(model, dataloader, criterion, optimizer, device, scaler=None):
@@ -47,13 +58,13 @@ def train_epoch(model, dataloader, criterion, optimizer, device, scaler=None):
             # AMP: run forward in float16, keep loss scaling stable
             with torch.amp.autocast('cuda'):
                 pred_ab = model(l)
-                loss = criterion(pred_ab, ab)
+                loss = criterion(pred_ab, ab) + 0.05 * colorfulness_penalty(pred_ab)
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
         else:
             pred_ab = model(l)
-            loss = criterion(pred_ab, ab)
+            loss = criterion(pred_ab, ab) + 0.05 * colorfulness_penalty(pred_ab)
             loss.backward()
             optimizer.step()
 
@@ -127,6 +138,8 @@ def main():
 
     start_epoch = 0
     best_val = float("inf")
+    training_run_start = time.time()
+    epoch_log = []  # collects per-epoch timing + loss for summary
 
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -150,6 +163,8 @@ def main():
 
             print(f"[Phase1] Epoch {epoch+1}/{start_epoch + args.phase1_epochs} | train: {train_loss:.5f} | val: {val_loss:.5f} | {t1-t0:.1f}s")
 
+            epoch_log.append({"phase": 1, "epoch": epoch+1, "train_loss": train_loss, "val_loss": val_loss, "elapsed_s": round(t1-t0, 1)})
+
             ckpt_path = os.path.join(args.output_dir, f"best_phase1_epoch{epoch+1}.pth")
             save_checkpoint({"epoch": epoch, "model_state": model.state_dict(), "best_val": val_loss}, ckpt_path)
 
@@ -163,6 +178,7 @@ def main():
     # Phase 2: unfreeze full model
     model.unfreeze_encoder()
     optimizer = Adam(model.parameters(), lr=args.lr2)
+    scheduler = CosineAnnealingLR(optimizer, T_max=args.phase2_epochs, eta_min=1e-7)
 
     for epoch in range(start_epoch, start_epoch + args.phase2_epochs):
         t0 = time.time()
@@ -172,6 +188,9 @@ def main():
 
         print(f"[Phase2] Epoch {epoch-start_epoch+1}/{args.phase2_epochs} | train: {train_loss:.5f} | val: {val_loss:.5f} | {t1-t0:.1f}s")
 
+        scheduler.step()
+        epoch_log.append({"phase": 2, "epoch": epoch-start_epoch+1, "train_loss": train_loss, "val_loss": val_loss, "elapsed_s": round(t1-t0, 1)})
+
         ckpt_path = os.path.join(args.output_dir, f"best_phase2_epoch{epoch+1}.pth")
         save_checkpoint({"epoch": epoch, "model_state": model.state_dict(), "best_val": val_loss}, ckpt_path)
 
@@ -180,14 +199,31 @@ def main():
             save_checkpoint({"epoch": epoch, "model_state": model.state_dict(), "best_val": best_val}, os.path.join(args.output_dir, "best.pth"))
 
         result_file = Path("results/training_metrics.json")
-        stats = {"epoch": epoch+1, "train_loss":train_loss, "val_loss":val_loss}
+        stats = {"epoch": epoch+1, "train_loss": train_loss, "val_loss": val_loss, "elapsed_s": round(t1-t0, 1)}
         if result_file.exists():
             existing = json.loads(result_file.read_text())
         else:
             existing = []
         existing.append(stats)
+        result_file.parent.mkdir(parents=True, exist_ok=True)
         result_file.write_text(json.dumps(existing, indent=2))
 
+    total_elapsed = time.time() - training_run_start
+    summary = {
+        "total_elapsed_s": round(total_elapsed, 1),
+        "total_elapsed_human": f"{int(total_elapsed//3600)}h {int((total_elapsed%3600)//60)}m {int(total_elapsed%60)}s",
+        "phase1_epochs": args.phase1_epochs,
+        "phase2_epochs": args.phase2_epochs,
+        "best_val_l1_ab": round(best_val, 6),
+        "batch_size": args.batch_size,
+        "train_dirs": args.train_dir,
+        "amp": args.amp,
+        "epochs": epoch_log,
+    }
+    summary_file = Path("results/training_summary.json")
+    summary_file.parent.mkdir(parents=True, exist_ok=True)
+    summary_file.write_text(json.dumps(summary, indent=2))
+    print(f"Training summary saved to {summary_file}")
     print("Training complete. Best val L1(ab) =", best_val)
 
 

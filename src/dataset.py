@@ -18,7 +18,7 @@ import numpy as np
 from PIL import Image
 from skimage import color          # rgb2lab — the key color-space conversion
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
 import torchvision.transforms as T
 
 
@@ -167,7 +167,7 @@ class ColorizationDataset(Dataset):
 # ── DataLoader factory ────────────────────────────────────────────────────────
 
 def get_dataloaders(
-    train_dir: str,
+    train_dirs,
     val_dir:   str,
     batch_size: int  = 32,
     num_workers: int = 4,
@@ -178,17 +178,24 @@ def get_dataloaders(
     Build and return (train_loader, val_loader).
 
     Args:
-        train_dir   : path to training images   (e.g. "data/train/")
+        train_dirs  : path (str) or list of paths to training image directories
         val_dir     : path to validation images  (e.g. "data/val/")
         batch_size  : images per batch (reduce if you run out of GPU memory)
         num_workers : parallel data loading workers (0 = single-threaded, safe on Windows)
-        max_train   : cap on training images   (None = use all)
+        max_train   : cap on training images per directory (None = use all)
         max_val     : cap on validation images (None = use all)
 
     Returns:
         train_loader, val_loader
     """
-    train_dataset = ColorizationDataset(train_dir, augment=True,  max_images=max_train)
+    if isinstance(train_dirs, str):
+        train_dirs = [train_dirs]
+
+    train_datasets = [
+        ColorizationDataset(d, augment=True, max_images=max_train)
+        for d in train_dirs
+    ]
+    train_dataset = ConcatDataset(train_datasets) if len(train_datasets) > 1 else train_datasets[0]
     val_dataset   = ColorizationDataset(val_dir,   augment=False, max_images=max_val)
 
     train_loader = DataLoader(
@@ -212,7 +219,8 @@ def get_dataloaders(
         prefetch_factor=2 if num_workers > 0 else None,
     )
 
-    print(f"Training images  : {len(train_dataset):,}")
+    total_train = sum(len(d) for d in train_datasets)
+    print(f"Training images  : {total_train:,} (across {len(train_dirs)} director{'y' if len(train_dirs)==1 else 'ies'})")
     print(f"Validation images: {len(val_dataset):,}")
     print(f"Batch size       : {batch_size}")
     print(f"Train batches    : {len(train_loader):,}")

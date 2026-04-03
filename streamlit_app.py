@@ -88,7 +88,7 @@ def main():
     model = load_model(pretrained=False)
     st.sidebar.success(f"Model loaded ({DEVICE})")
 
-    tabs = st.tabs(["Inference", "Metrics", "Training log"])
+    tabs = st.tabs(["Inference", "Metrics", "Training Log", "Training Summary"])
     with tabs[0]:
         st.subheader("Inference")
         uploaded = st.file_uploader("Upload grayscale image", type=["jpg", "jpeg", "png", "webp"])
@@ -118,9 +118,57 @@ def main():
         st.json(eval_metrics)
 
     with tabs[2]:
-        st.subheader("Training metrics (if available)")
+        st.subheader("Per-epoch training metrics")
         tm = get_training_metrics()
-        st.json(tm)
+        if isinstance(tm, list) and len(tm) > 0:
+            import pandas as pd
+            df = pd.DataFrame(tm)
+            cols = [c for c in ["epoch", "train_loss", "val_loss", "elapsed_s"] if c in df.columns]
+            df = df[cols]
+            st.dataframe(df, use_container_width=True)
+            if "val_loss" in df.columns and "train_loss" in df.columns:
+                st.line_chart(df.set_index("epoch")[["train_loss", "val_loss"]])
+        else:
+            st.json(tm)
+
+    with tabs[3]:
+        st.subheader("Training run summary")
+        summary_path = Path("results/training_summary.json")
+        if summary_path.exists():
+            try:
+                summary = json.loads(summary_path.read_text())
+            except Exception:
+                st.error("Could not parse training_summary.json")
+                summary = None
+            if summary:
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Total Training Time", summary.get("total_elapsed_human", "—"))
+                col2.metric("Best Val L1(ab)", f"{summary.get('best_val_l1_ab', '—'):.5f}" if isinstance(summary.get("best_val_l1_ab"), float) else "—")
+                col3.metric("Total Epochs", (summary.get("phase1_epochs", 0) or 0) + (summary.get("phase2_epochs", 0) or 0))
+
+                st.markdown("---")
+                col4, col5, col6 = st.columns(3)
+                col4.metric("Batch Size", summary.get("batch_size", "—"))
+                col5.metric("AMP Enabled", "Yes" if summary.get("amp") else "No")
+                train_dirs = summary.get("train_dirs", [])
+                col6.metric("Train Directories", len(train_dirs) if isinstance(train_dirs, list) else 1)
+
+                if isinstance(train_dirs, list):
+                    st.caption("Train directories: " + ", ".join(train_dirs))
+
+                epochs = summary.get("epochs", [])
+                if epochs:
+                    import pandas as pd
+                    df_e = pd.DataFrame(epochs)
+                    cols_e = [c for c in ["phase", "epoch", "train_loss", "val_loss", "elapsed_s"] if c in df_e.columns]
+                    df_e = df_e[cols_e]
+                    st.markdown("**Per-epoch breakdown**")
+                    st.dataframe(df_e, use_container_width=True)
+                    if "elapsed_s" in df_e.columns:
+                        st.markdown("**Epoch duration (seconds)**")
+                        st.bar_chart(df_e.set_index(df_e.index)["elapsed_s"])
+        else:
+            st.info("No training_summary.json found. Run training first to generate it.")
 
 if __name__ == "__main__":
     main()
