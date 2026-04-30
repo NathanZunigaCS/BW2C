@@ -12,7 +12,7 @@ from src.model import ResNetColorizer
 from src.dataset import normalize_l, unnormalize_ab, lab_to_rgb
 from src.evaluate import compute_psnr  # re-export or duplicate easy function
 
-CHECKPOINT = "checkpoints/best.pth"
+CHECKPOINT = "checkpoints_v4/best.pth"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 IMG_SIZE = 256
 
