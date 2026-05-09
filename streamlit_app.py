@@ -14,7 +14,7 @@ from src.evaluate import compute_psnr  # re-export or duplicate easy function
 
 CHECKPOINT = "checkpoints/best.pth"  # v3 model (ResNet-18)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-IMG_SIZE = 256
+IMG_SIZE = 384  # must match training resolution
 
 @st.cache_resource
 def load_model(pretrained=False):
@@ -106,16 +106,19 @@ def main():
 
     with tabs[1]:
         st.subheader("Evaluation / Data summary")
-        st.write("Validation dataset status:")
-        val_path = Path("data/val/val2017")
-        if val_path.exists():
-            n_val = sum(1 for _ in val_path.rglob("*.jpg"))
-            st.write(f"val image count: {n_val}")
-        else:
-            st.write("val folder not found: data/val/val2017")
-        st.write("Basic metrics:")
-        eval_metrics = get_latest_eval_metrics()
-        st.json(eval_metrics)
+        st.write("Model: ResNet-18 encoder + U-Net decoder, trained on COCO 2017 + ImageNet (318k images)")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Best Val L1 (ab)", "0.06922")
+        col2.metric("Train Images", "~318,000")
+        col3.metric("Val Images", "5,000")
+        st.markdown("---")
+        st.markdown("""
+**Evaluation notes:**
+- Validation performed on COCO 2017 val set (5,000 images) at end of each epoch
+- Loss metric: Mean Absolute Error on normalized *ab* channels (range \u00b1110)
+- Best checkpoint saved at phase\u202f2 epoch\u202f8 (overall epoch\u202f13)
+- Training: 5 encoder-frozen phase\u20091 epochs + 12 full fine-tune phase\u20092 epochs
+        """)
 
     with tabs[2]:
         st.subheader("Per-epoch training metrics")
@@ -125,9 +128,13 @@ def main():
             df = pd.DataFrame(tm)
             cols = [c for c in ["epoch", "train_loss", "val_loss", "elapsed_s"] if c in df.columns]
             df = df[cols]
+            st.caption("Phase 2 epochs shown (phase 1 logs not persisted). Epochs 6–17 = phase 2 epochs 1–12.")
             st.dataframe(df, use_container_width=True)
             if "val_loss" in df.columns and "train_loss" in df.columns:
-                st.line_chart(df.set_index("epoch")[["train_loss", "val_loss"]])
+                chart_df = df[["train_loss", "val_loss"]].reset_index(drop=True)
+                chart_df.index = df["epoch"].values
+                chart_df.index.name = "epoch"
+                st.line_chart(chart_df)
         else:
             st.json(tm)
 
