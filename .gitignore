@@ -21,8 +21,9 @@ data/
 Presentation Assets/
 
 # ── Model Checkpoints ─────────────────────────────────────────────────────────
-checkpoints/
-*.pth
+checkpoints/*
+!checkpoints/best.pth
+checkpoints_v4/
 *.pt
 *.ckpt
 
@@ -31,8 +32,10 @@ runs/
 logs/
 
 # ── Results (keep samples, not bulk output) ───────────────────────────────────
-results/
+results/*
 !results/samples/
+!results/training_summary.json
+!results/training_metrics.json
 
 # ── Jupyter ───────────────────────────────────────────────────────────────────
 .ipynb_checkpoints/

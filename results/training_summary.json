@@ -1,0 +1,15 @@
+{
+  "total_elapsed_s": 69789,
+  "total_elapsed_human": "19h 23m 9s",
+  "phase1_epochs": 5,
+  "phase2_epochs": 12,
+  "best_val_l1_ab": 0.069224,
+  "batch_size": 32,
+  "train_dirs": [
+    "data/train/train2017",
+    "data/train/train_ImageNet"
+  ],
+  "amp": true,
+  "perceptual_weight": 0.0,
+  "epochs": []
+}
