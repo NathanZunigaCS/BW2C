@@ -1,8 +1,8 @@
-"""model.py — ResNet-34 + U-Net style colorization model (v4)"""
+"""model.py — ResNet U-Net style colorization model (supports ResNet-18 and ResNet-34)"""
 
 import torch
 import torch.nn as nn
-from torchvision.models import resnet34, ResNet34_Weights
+from torchvision.models import resnet18, ResNet18_Weights, resnet34, ResNet34_Weights
 
 
 class ConvBlock(nn.Sequential):
@@ -33,11 +33,15 @@ class DecoderBlock(nn.Module):
 
 
 class ResNetColorizer(nn.Module):
-    def __init__(self, pretrained=True):
+    def __init__(self, pretrained=True, backbone='resnet34'):
         super().__init__()
 
-        weights = ResNet34_Weights.IMAGENET1K_V1 if pretrained else None
-        backbone = resnet34(weights=weights)
+        if backbone == 'resnet18':
+            weights = ResNet18_Weights.IMAGENET1K_V1 if pretrained else None
+            backbone = resnet18(weights=weights)
+        else:
+            weights = ResNet34_Weights.IMAGENET1K_V1 if pretrained else None
+            backbone = resnet34(weights=weights)
 
         # Encoder: keep all initial stages
         self.conv1 = backbone.conv1

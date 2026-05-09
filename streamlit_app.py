@@ -12,13 +12,13 @@ from src.model import ResNetColorizer
 from src.dataset import normalize_l, unnormalize_ab, lab_to_rgb
 from src.evaluate import compute_psnr  # re-export or duplicate easy function
 
-CHECKPOINT = "checkpoints_v4/best.pth"
+CHECKPOINT = "checkpoints/best.pth"  # v3 model (ResNet-18)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 IMG_SIZE = 256
 
 @st.cache_resource
 def load_model(pretrained=False):
-    model = ResNetColorizer(pretrained=pretrained).to(DEVICE)
+    model = ResNetColorizer(pretrained=pretrained, backbone='resnet18').to(DEVICE)
     if Path(CHECKPOINT).exists():
         ckpt = torch.load(CHECKPOINT, map_location=DEVICE, weights_only=True)
         model.load_state_dict(ckpt["model_state"])
