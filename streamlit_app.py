@@ -14,7 +14,7 @@ from src.evaluate import compute_psnr  # re-export or duplicate easy function
 
 CHECKPOINT = "checkpoints/best.pth"  # v3 model (ResNet-18)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-IMG_SIZE = 384  # must match training resolution
+IMG_SIZE = 256
 
 @st.cache_resource
 def load_model(pretrained=False):
