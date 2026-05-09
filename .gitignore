@@ -24,6 +24,8 @@ Presentation Assets/
 checkpoints/*
 !checkpoints/best.pth
 checkpoints_v4/
+checkpoints_v5/*
+!checkpoints_v5/best.pth
 *.pt
 *.ckpt
 
@@ -35,8 +37,9 @@ logs/
 results/*
 !results/samples/
 !results/training_summary.json
-!results/training_metrics.json
-
+!results/training_metrics.jsonresults_v5/*
+!results_v5/training_summary.json
+!results_v5/training_metrics.json
 # ── Jupyter ───────────────────────────────────────────────────────────────────
 .ipynb_checkpoints/
 *.ipynb

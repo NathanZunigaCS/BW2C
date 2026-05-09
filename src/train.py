@@ -1,4 +1,4 @@
-"""train.py — training loop for BW2C colorization (v4: ResNet-34 + VGG perceptual loss)"""
+"""train.py — training loop for BW2C colorization (supports v3/v4/v5 via CLI flags)"""
 
 import argparse
 import json
@@ -31,6 +31,10 @@ def parse_args():
     p.add_argument("--pretrained", action="store_true")
     p.add_argument("--checkpoint", type=str, default=None)
     p.add_argument("--output-dir", type=str, default="checkpoints")
+    p.add_argument("--results-dir", type=str, default="results",
+                   help="Directory for training_metrics.json and training_summary.json")
+    p.add_argument("--backbone", type=str, default="resnet34", choices=["resnet18", "resnet34"],
+                   help="Encoder backbone (resnet18 = v3/v5, resnet34 = v4)")
     p.add_argument("--resume", action="store_true")
     p.add_argument("--amp", action="store_true", help="Enable AMP mixed precision (faster on CUDA)")
     p.add_argument("--perceptual-weight", type=float, default=0.0,
@@ -209,7 +213,7 @@ def main():
     if scaler:
         print("AMP mixed precision enabled")
 
-    model = ResNetColorizer(pretrained=args.pretrained)
+    model = ResNetColorizer(pretrained=args.pretrained, backbone=args.backbone)
     model.to(device)
 
     # torch.compile: fuses ops and generates optimized CUDA kernels (~10-20% faster training)
@@ -305,7 +309,7 @@ def main():
             best_val = val_loss
             save_checkpoint({"epoch": epoch, "model_state": model.state_dict(), "best_val": best_val}, os.path.join(args.output_dir, "best.pth"))
 
-        result_file = Path("results/training_metrics.json")
+        result_file = Path(args.results_dir) / "training_metrics.json"
         stats = {"epoch": epoch+1, "train_loss": train_loss, "val_loss": val_loss, "elapsed_s": round(t1-t0, 1)}
         if result_file.exists():
             existing = json.loads(result_file.read_text())
@@ -324,11 +328,12 @@ def main():
         "best_val_l1_ab": round(best_val, 6),
         "batch_size": args.batch_size,
         "train_dirs": args.train_dir,
+        "backbone": args.backbone,
         "amp": args.amp,
         "perceptual_weight": args.perceptual_weight,
         "epochs": epoch_log,
     }
-    summary_file = Path("results/training_summary.json")
+    summary_file = Path(args.results_dir) / "training_summary.json"
     summary_file.parent.mkdir(parents=True, exist_ok=True)
     summary_file.write_text(json.dumps(summary, indent=2))
     print(f"Training summary saved to {summary_file}")
