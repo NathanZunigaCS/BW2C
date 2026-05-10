@@ -12,7 +12,7 @@ from src.model import ResNetColorizer
 from src.dataset import normalize_l, unnormalize_ab, lab_to_rgb
 from src.evaluate import compute_psnr  # re-export or duplicate easy function
 
-CHECKPOINT = "checkpoints/best.pth"  # v3 model (ResNet-18)
+CHECKPOINT = "checkpoints_v5/best.pth"  # v5 model (ResNet-18 + colorfulness penalty)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 IMG_SIZE = 256
 
@@ -60,13 +60,12 @@ def colorize_image(model, image: Image.Image):
 
 def get_training_metrics():
     stats = {}
-    # Option 1: load existing metrics JSON if available
-    mpath = Path("results/training_metrics.json")
+    mpath = Path("results_v5/training_metrics.json")
     if mpath.exists():
         try:
             stats = json.loads(mpath.read_text())
         except Exception:
-            stats = {"error": "Unable to parse results/training_metrics.json"}
+            stats = {"error": "Unable to parse results_v5/training_metrics.json"}
     else:
         stats["note"] = "No training_metrics.json found."
     return stats
@@ -108,7 +107,7 @@ def main():
         st.subheader("Evaluation / Data summary")
         st.write("Model: ResNet-18 encoder + U-Net decoder, trained on COCO 2017 + ImageNet (318k images)")
         col1, col2, col3 = st.columns(3)
-        col1.metric("Best Val L1 (ab)", "0.06922")
+        col1.metric("Best Val L1 (ab)", "0.06947")
         col2.metric("Train Images", "~318,000")
         col3.metric("Val Images", "5,000")
         st.markdown("---")
@@ -116,8 +115,9 @@ def main():
 **Evaluation notes:**
 - Validation performed on COCO 2017 val set (5,000 images) at end of each epoch
 - Loss metric: Mean Absolute Error on normalized *ab* channels (range \u00b1110)
-- Best checkpoint saved at phase\u202f2 epoch\u202f8 (overall epoch\u202f13)
-- Training: 5 encoder-frozen phase\u20091 epochs + 12 full fine-tune phase\u20092 epochs
+- Best checkpoint saved at phase\u202f2 epoch\u202f11 (overall epoch\u202f16)
+- Training: 5 encoder-frozen phase\u20091 epochs + 15 full fine-tune phase\u20092 epochs
+- Colorfulness penalty (0.05\u00d7) added to push predictions away from desaturated gray
         """)
 
     with tabs[2]:
@@ -140,7 +140,7 @@ def main():
 
     with tabs[3]:
         st.subheader("Training run summary")
-        summary_path = Path("results/training_summary.json")
+        summary_path = Path("results_v5/training_summary.json")
         if summary_path.exists():
             try:
                 summary = json.loads(summary_path.read_text())
