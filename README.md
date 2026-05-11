@@ -304,6 +304,25 @@ Visual outputs from all versions are stored in `v1_results/` through `v5_results
 
 ---
 
+## Conclusion
+
+This project successfully developed and iteratively refined a supervised CNN-based image colorization pipeline across five model versions. Starting from a ResNet-18 + U-Net baseline trained on COCO 2017, each version introduced a targeted change — expanded training data, a deeper encoder, VGG perceptual loss, and a colorfulness penalty — with each decision directly motivated by observed failure modes in the prior version.
+
+The final deployed model (v5) demonstrates that a lightweight colorfulness penalty is a more practical solution to L1's desaturation bias than VGG perceptual loss: it achieves comparable Val L1 to v3 (0.06947 vs. 0.06922), trains in under 21 hours (vs. 48.5h for v4), and produces warmer, more coherent colorizations without the cool-tone bias introduced by v4.
+
+**Limitations:**
+- Desaturation persists on high-frequency textured regions (dense foliage, fabric) where ab is ambiguous from luminance alone.
+- Rare or unusual colors (neon signage, brightly painted vehicles) are underrepresented in COCO+ImageNet and are often predicted conservatively.
+- Predicted ab at 256×256 must be upscaled to original resolution, which can introduce minor color boundary bleeding near sharp edges.
+
+**Future Work:**
+- **Transformer encoder** — replacing ResNet with a ViT or Swin Transformer for longer-range spatial context, critical for uniform-color regions like sky and water.
+- **Class-conditioned colorization** — incorporating scene labels (as in Iizuka et al. [4]) or text prompts (as in Nishio and Miyata [3]) to resolve inherent color ambiguity.
+- **Adversarial refinement** — adding a lightweight PatchGAN discriminator (following Isola et al. [2]) as a post-training fine-tune to sharpen color boundaries.
+- **Domain-specific perceptual loss** — training a perceptual network on colorization data rather than ImageNet VGG to avoid the cool-tone bias observed in v4.
+
+---
+
 ## References
 
 [1] R. Zhang, P. Isola, and A. A. Efros, "Colorful image colorization," in *Computer Vision – ECCV 2016*, B. Leibe, J. Matas, N. Sebe, and M. Welling, Eds. Cham, Switzerland: Springer, 2016.
