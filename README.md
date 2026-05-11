@@ -290,17 +290,26 @@ streamlit run streamlit_app.py
 
 ## Results
 
-| Metric | v3 | v5 (current) |
-|---|---|---|
-| Best Val L1 (ab) | 0.06922 | 0.06947 |
-| Training Time | 19h 23m | 20h 44m |
-| Train Images | ~318,000 | ~318,000 |
-| Phase 1 Epochs | 5 | 5 |
-| Phase 2 Epochs | 12 | 15 |
-| Colorfulness Penalty | No | Yes (0.05×) |
-| Cosine LR Decay | No | Yes |
+### Quantitative — All Versions
 
-Visual outputs from all versions are stored in `v1_results/` through `v5_results/`. The **Model Comparison** tab in the Streamlit app displays all five versions side-by-side.
+| Version | Backbone | Dataset | Additional Loss | Batch | Ph1 Ep | Ph2 Ep | Best Val L1 (ab) | Train Time |
+|---|---|---|---|---|---|---|---|---|
+| **v1** | ResNet-18 | COCO 118k | — | 32 | 5 | 20 | 0.07057 | ~8h |
+| **v2** | ResNet-18 | COCO 118k | — | 32 | 5 | 20 | 0.07057 | ~8.5h |
+| **v3** | ResNet-18 | COCO+ImageNet 318k | — | 32 | 5 | 12 | 0.06922 | 19h 23m |
+| **v4** | ResNet-34 | COCO+ImageNet 318k | VGG perceptual (0.1×) | 32 | 5 | 15 | 0.06824 | 48h 32m |
+| **v5** ✅ | ResNet-18 | COCO+ImageNet 318k | Colorfulness penalty (0.05×) | 64 | 5 | 15 | 0.06947 | 20h 44m |
+
+### Key Findings
+
+- **Data scale (v2→v3)** was the single largest improvement driver, cutting Val L1 by −0.00135 with no architectural change.
+- **v4 achieved the best raw L1 (0.06824)** but required 48.5h of training (2.3× longer than v5) and introduced a systematic cool-tone bias from VGG's ImageNet feature distribution, making visual quality worse on warm-toned scenes.
+- **v5 recovers near-v3 L1 efficiency** while producing warmer, more vivid colorizations. The colorfulness penalty adds negligible compute and fully eliminates the cool-tone bias. Doubling batch size (32→64) reduced wall-clock time relative to v3 despite 3 additional fine-tune epochs.
+- v1 and v2 produced identical Val L1, confirming the COCO-only 118k data ceiling; more epochs did not help.
+
+### Qualitative
+
+Visual outputs from all versions are stored in `v1_results/` through `v5_results/`. The **Model Comparison** tab in the Streamlit app displays all five versions side-by-side for direct visual comparison.
 
 ---
 
