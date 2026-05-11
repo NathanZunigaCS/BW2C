@@ -80,6 +80,13 @@ def get_latest_eval_metrics():
         out["status"] = "missing val folder"
     return out
 
+def natural_sort_key(name: str):
+    """Sort 'streamlit_colorized.png' before 'streamlit_colorized (2).png', etc."""
+    import re
+    parts = re.split(r'(\d+)', name)
+    return [int(p) if p.isdigit() else p.lower() for p in parts]
+
+
 def main():
     st.title("BW2C Colorization Demo")
     st.write("Simple Streamlit frontend for grayscale-to-color model with metrics tabs.")
@@ -87,7 +94,7 @@ def main():
     model = load_model(pretrained=False)
     st.sidebar.success(f"Model loaded ({DEVICE})")
 
-    tabs = st.tabs(["Inference", "Metrics", "Training Log", "Training Summary"])
+    tabs = st.tabs(["Inference", "Metrics", "Training Log", "Training Summary", "Model Comparison"])
     with tabs[0]:
         st.subheader("Inference")
         uploaded = st.file_uploader("Upload grayscale image", type=["jpg", "jpeg", "png", "webp"])
@@ -176,6 +183,33 @@ def main():
                         st.bar_chart(df_e.set_index(df_e.index)["elapsed_s"])
         else:
             st.info("No training_summary.json found. Run training first to generate it.")
+
+    with tabs[4]:
+        st.subheader("Model Comparison — V1 → V5")
+        st.caption("Each row shows the same image colorized by each model version.")
+
+        version_dirs = [Path(f"v{i}_results") for i in range(1, 6)]
+        missing = [str(d) for d in version_dirs if not d.exists()]
+        if missing:
+            st.warning(f"Missing result directories: {', '.join(missing)}")
+        else:
+            # Collect filenames present in ALL version directories
+            file_sets = [set(p.name for p in d.glob("*.png")) for d in version_dirs]
+            common_files = sorted(file_sets[0].intersection(*file_sets[1:]), key=natural_sort_key)
+
+            if not common_files:
+                st.info("No common PNG files found across all version directories.")
+            else:
+                header_cols = st.columns(5)
+                for i, col in enumerate(header_cols):
+                    col.markdown(f"**V{i + 1}**")
+                st.markdown("---")
+
+                for fname in common_files:
+                    row = st.columns(5)
+                    for col, vdir in zip(row, version_dirs):
+                        img_path = vdir / fname
+                        col.image(str(img_path), caption=fname, use_container_width=True)
 
 if __name__ == "__main__":
     main()
