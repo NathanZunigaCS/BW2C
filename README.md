@@ -306,7 +306,20 @@ Visual outputs from all versions are stored in `v1_results/` through `v5_results
 
 ## References
 
-- Zhang, R., Isola, P., & Efros, A. A. (2016). *Colorful Image Colorization*. ECCV 2016. [[paper]](https://arxiv.org/abs/1603.08511)
-- He, K., Zhang, X., Ren, S., & Sun, J. (2016). *Deep Residual Learning for Image Recognition*. CVPR 2016. [[paper]](https://arxiv.org/abs/1512.03385)
-- Ronneberger, O., Fischer, P., & Brox, T. (2015). *U-Net: Convolutional Networks for Biomedical Image Segmentation*. MICCAI 2015. [[paper]](https://arxiv.org/abs/1505.04597)
-- Lin, T.-Y. et al. (2014). *Microsoft COCO: Common Objects in Context*. ECCV 2014. [[paper]](https://arxiv.org/abs/1405.0312)
+[1] R. Zhang, P. Isola, and A. A. Efros, "Colorful image colorization," in *Computer Vision – ECCV 2016*, B. Leibe, J. Matas, N. Sebe, and M. Welling, Eds. Cham, Switzerland: Springer, 2016.
+
+[2] P. Isola, J.-Y. Zhu, T. Zhou, and A. A. Efros, "Image-to-image translation with conditional adversarial networks," in *Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR)*, 2017.
+
+[3] R. Nishio and T. Miyata, "Zero-shot class conditioned image colorization by using pretrained diffusion models," *Nonlinear Theory and Its Applications, IEICE*, vol. 16, no. 4, 2025, doi: 10.1587/nolta.16.896.
+
+[4] S. Iizuka, E. Simo-Serra, and H. Ishikawa, "Let there be color!: Joint end-to-end learning of global and local image priors for automatic image colorization with simultaneous classification," *ACM Trans. Graph.*, vol. 35, no. 4, 2016.
+
+[5] O. Ronneberger, P. Fischer, and T. Brox, "U-Net: Convolutional networks for biomedical image segmentation," in *Medical Image Computing and Computer-Assisted Intervention – MICCAI 2015*. Cham, Switzerland: Springer, 2015.
+
+[6] "What Is LAB Color? - TruHu Blog," TruHu Blog - Good color made easy, Jan. 22, 2024. https://truhu.app/blog/what-is-lab-color/.
+
+[7] T.-Y. Lin et al., "Microsoft COCO: Common objects in context," in *Proc. ECCV*, 2014.
+
+[8] O. Russakovsky et al., "ImageNet large scale visual recognition challenge," *Int. J. Comput. Vis.*, vol. 115, no. 3, pp. 211–252, 2015.
+
+[9] J. Johnson, A. Alahi, and L. Fei-Fei, "Perceptual losses for real-time style transfer and super-resolution," in *Proc. ECCV*, 2016.
