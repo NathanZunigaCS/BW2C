@@ -166,7 +166,8 @@ BW2C/
 ├── v2_results/
 ├── v3_results/
 ├── v4_results/
-├── streamlit_app.py    # 4-tab Streamlit demo: Inference, Metrics, Training Log, Summary
+├── v5_results/
+├── streamlit_app.py    # 5-tab Streamlit demo: Inference, Metrics, Training Log, Summary, Model Comparison
 ├── requirements.txt
 └── README.md
 ```
@@ -230,7 +231,7 @@ $env:TORCHDYNAMO_DISABLE=1
 python src/train.py `
   --train-dir data/train/train2017 data/train/train_ImageNet `
   --val-dir data/val/val2017 `
-  --batch-size 32 --num-workers 4 `
+  --batch-size 64 --num-workers 4 `
   --phase1-epochs 5 --phase2-epochs 15 `
   --lr2 1e-5 --amp --pretrained `
   --backbone resnet18 `
@@ -299,7 +300,7 @@ streamlit run streamlit_app.py
 | Colorfulness Penalty | No | Yes (0.05×) |
 | Cosine LR Decay | No | Yes |
 
-Visual outputs from all versions are stored in `v1_results/` through `v4_results/` and via the Streamlit app for v5.
+Visual outputs from all versions are stored in `v1_results/` through `v5_results/`. The **Model Comparison** tab in the Streamlit app displays all five versions side-by-side.
 
 ---
 
